@@ -1,0 +1,5 @@
+flask
+requests
+vosk
+sounddevice
+pymongo

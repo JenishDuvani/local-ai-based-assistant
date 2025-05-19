@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎤 Voice-Based Recipe Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; background: #f0f0f0; }
+    button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+    #transcript, #result { margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #ccc; border-radius: 5px; }
+    .loader {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+  </style>
+</head>
+<body>
+  <h1>🎤 Voice-Based Recipe Generator</h1>
+
+  <button id="listenBtn" onclick="startListening()">🎙️ Start Listening</button>
+  <button id="editBtn" style="display:none;" onclick="editPrompt()">✏️ Edit</button>
+  <button id="cancelBtn" style="display:none;" onclick="cancelSubmission()">🛑 Cancel</button>
+  <button id="againBtn" style="display:none;" onclick="startListening()">🔁 Record Again</button>
+
+  <div id="transcript">🎙️ Waiting for speech input...</div>
+  <div id="result"></div>
+
+  <script>
+    let finalPrompt = "";
+    let timeoutId = null;
+
+    function startListening() {
+      clearTimeout(timeoutId);
+
+      const listenBtn = document.getElementById('listenBtn');
+      listenBtn.disabled = true;
+      listenBtn.innerText = "🎧 Listening...";
+
+      document.getElementById('editBtn').style.display = "none";
+      document.getElementById('cancelBtn').style.display = "none";
+      document.getElementById('againBtn').style.display = "none";
+      document.getElementById('result').innerHTML = "";
+
+      fetch('/transcribe-audio')
+        .then(response => response.json())
+        .then(data => {
+          finalPrompt = data.transcription;
+          document.getElementById('transcript').innerText = "🗣️ You said: " + finalPrompt;
+
+          if (finalPrompt && finalPrompt.trim() !== "") {
+            document.getElementById('editBtn').style.display = "inline-block";
+            document.getElementById('cancelBtn').style.display = "inline-block";
+
+            timeoutId = setTimeout(() => {
+              submitPrompt(finalPrompt);
+            }, 5000); // Give 5 sec to edit
+          } else {
+            document.getElementById('result').innerText = "❌ Could not recognize speech. Try again.";
+            document.getElementById('againBtn').style.display = "inline-block";
+          }
+        })
+        .catch(err => {
+          document.getElementById('transcript').innerText = "❌ Error: " + err;
+          document.getElementById('againBtn').style.display = "inline-block";
+        })
+        .finally(() => {
+          listenBtn.disabled = false;
+          listenBtn.innerText = "🎙️ Start Listening";
+        });
+    }
+
+    function editPrompt() {
+      clearTimeout(timeoutId);
+      const userEdit = prompt("✍️ Edit your prompt:", finalPrompt);
+      if (userEdit !== null) {
+        finalPrompt = userEdit;
+        submitPrompt(finalPrompt);
+      }
+    }
+
+    function cancelSubmission() {
+      clearTimeout(timeoutId);
+      document.getElementById('transcript').innerText = "🚫 Submission canceled. Click '🔁 Record Again' to retry.";
+      document.getElementById('editBtn').style.display = "none";
+      document.getElementById('cancelBtn').style.display = "none";
+      document.getElementById('againBtn').style.display = "inline-block";
+    }
+
+    function submitPrompt(promptText) {
+  document.getElementById('result').innerHTML = '<div class="loader"></div> ⏳ Generating recipe...';
+  document.getElementById('editBtn').style.display = "none";
+  document.getElementById('cancelBtn').style.display = "none";
+  document.getElementById('againBtn').style.display = "none";
+
+  fetch('/generate-from-voice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: promptText })
+  })
+    .then(res => res.json())
+    .then(data => {
+      let recipeText = data.recipe || "❌ No response.";
+
+      // 1. Escape HTML special characters for safety
+      recipeText = recipeText.replace(/&/g, "&amp;")
+                             .replace(/</g, "&lt;")
+                             .replace(/>/g, "&gt;");
+
+      // 2. Replace double line breaks with paragraph breaks
+      recipeText = recipeText.replace(/\n\n/g, '</p><p>');
+
+      // 3. Replace single line breaks with line breaks
+      recipeText = recipeText.replace(/\n/g, '<br>');
+
+      // 4. Wrap inside <p> tags
+      recipeText = `<p>${recipeText}</p>`;
+
+      document.getElementById('result').innerHTML = `
+        <div style="padding: 20px; background: #fff8dc; border: 1px solid #ffd700; border-radius: 10px;">
+          <strong>🍽️ Recipe:</strong><br>${recipeText}
+        </div>
+      `;
+    })
+    .catch(err => {
+      document.getElementById('result').innerText = "❌ Error: " + err;
+    });
+}
+
+  </script>
+</body>
+</html>

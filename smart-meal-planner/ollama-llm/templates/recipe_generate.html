@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Meal Planner 🍽️</title>
+  <style>
+    body { font-family: Arial; padding: 30px; background: #f6f8fa; }
+    label { display: block; margin-top: 10px; }
+    textarea { width: 100%; height: 100px; margin-top: 5px; }
+    select, button, input { margin-top: 10px; padding: 8px; font-size: 16px; }
+    #result, #previousResults { margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 5px; }
+    #previousResults { margin-top: 30px; }
+    .button-row { margin-top: 20px; }
+    .button-row button { margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Smart Meal Planner 🍲</h1>
+
+  <form id="mealForm">
+    <label for="ingredients">Ingredients (comma-separated):</label>
+    <textarea id="ingredients" name="ingredients" required></textarea>
+
+    <label for="diet">Select Diet Type:</label>
+    <select id="diet" name="diet">
+      <option value="balanced">Balanced</option>
+      <option value="keto">Keto</option>
+      <option value="vegan">Vegan</option>
+      <option value="vegetarian">Vegetarian</option>
+      <option value="paleo">Paleo</option>
+    </select>
+
+    <div class="button-row">
+      <button type="submit">Generate Meal Plan</button>
+      <button type="button" onclick="loadPreviousRecipes()">Previous Recipes</button>
+      <button type="button" onclick="window.location.href='/'">Home</button>
+    </div>
+  </form>
+
+  <div id="result"></div>
+  <div id="previousResults"></div>
+
+  <script>
+    const form = document.getElementById('mealForm');
+    const resultDiv = document.getElementById('result');
+    const previousDiv = document.getElementById('previousResults');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultDiv.innerHTML = "⏳ Generating...";
+      previousDiv.innerHTML = ""; // Clear previous results
+
+      const ingredients = document.getElementById('ingredients').value.split(',').map(s => s.trim());
+      const diet = document.getElementById('diet').value;
+
+      try {
+        const response = await fetch('/generate-meal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ingredients, diet })
+        });
+
+        const data = await response.json();
+        let mealPlan = data.meal_plan || "❌ Failed to generate.";
+
+        mealPlan = formatMealPlan(mealPlan);
+
+        resultDiv.innerHTML = `
+          <div style="padding: 20px; background: #fff8dc; border: 1px solid #ffd700; border-radius: 10px;">
+            <strong>🍽️ Meal Plan:</strong><br>${mealPlan}
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = "❌ Error generating meal plan.";
+      }
+    });
+
+    function formatMealPlan(text) {
+      return `<p>${
+        text.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+      }</p>`;
+    }
+
+    async function loadPreviousRecipes() {
+      resultDiv.innerHTML = "";
+      previousDiv.innerHTML = "⏳ Loading previous recipes...";
+
+      try {
+        const response = await fetch('/previous-recipes');
+        const data = await response.json();
+
+        if (data.recipes && data.recipes.length > 0) {
+  previousDiv.innerHTML = "<h3>📜 Previous Recipes:</h3>";
+
+  data.recipes.forEach((recipe, index) => {
+  const formattedRecipe = formatMealPlan(recipe.response);  
+  const recipeId = `recipe-${index}`;
+
+  previousDiv.innerHTML += `
+    <div style="margin-bottom: 20px; padding: 15px; background: #f0fff0; border: 1px solid #90ee90; border-radius: 8px;">
+      <strong style="cursor: pointer; display: block; font-size: 18px;" onclick="toggleRecipe('${recipeId}')">
+        ▶️ Recipe ${index + 1}
+      </strong>
+      <div id="${recipeId}" style="
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.4s ease, padding-top 0.4s ease;
+      ">
+        ${formattedRecipe}
+      </div>
+    </div>
+  `;
+});
+} else {
+  previousDiv.innerHTML = "⚠️ No previous recipes found.";
+}
+
+      } catch (error) {
+        previousDiv.innerHTML = "❌ Error loading previous recipes.";
+      }
+    }
+
+    function toggleRecipe(id) {
+  const element = document.getElementById(id);
+  if (element.style.maxHeight) {
+    // Collapse
+    element.style.maxHeight = null;
+    element.style.paddingTop = "0px";
+  } else {
+    // Expand
+    element.style.maxHeight = element.scrollHeight + "px";
+    element.style.paddingTop = "10px";
+  }
+}
+
+  </script>
+</body>
+</html>
