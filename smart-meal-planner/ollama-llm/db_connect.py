@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
 # Your correct connection string
-client = MongoClient('mongodb+srv://24mca018:SmartMealDB@smartmealcluster.jeeh1sn.mongodb.net/?retryWrites=true&w=majority&appName=SmartMealCluster')
+client = MongoClient('mongodb+srv://url-key')
 db = client.get_database('smartmealdb')
 
 # Choose the collection you want to check
