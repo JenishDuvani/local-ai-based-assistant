@@ -1,7 +1,7 @@
 # config.py
 from pymongo import MongoClient
 
-MONGO_URI = "mongodb+srv://24mca018:SmartMealDB@smartmealcluster.jeeh1sn.mongodb.net/?retryWrites=true&w=majority&appName=SmartMealCluster"
+MONGO_URI = "mongodb+srv://url-key"
 
 mongo_client = MongoClient(MONGO_URI)
 # You can customize these:
