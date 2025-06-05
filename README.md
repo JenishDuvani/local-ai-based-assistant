@@ -1,4 +1,4 @@
-Here is the **entire `README.md` content** as a single Markdown file (no extra commentary, copy and paste directly):
+
 
 ---
 
