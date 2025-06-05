@@ -178,8 +178,8 @@ git lfs pull
 ## 👨‍💻 Contributors
 
 * Jenish Duvani
-* Sahil
-* Nishit
+* Hetashvi Bhagat
+
 
 ---
 
